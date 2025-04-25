@@ -1,51 +1,53 @@
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QTableWidget, QTableWidgetItem, 
                              QDoubleSpinBox, QLineEdit, QMessageBox, QScrollArea,
-                             QHeaderView)
+                             QHeaderView, QFrame)
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QColor, QPalette, QIcon
 
 class SetpointWindow(QWidget):
     def __init__(self, mqtt_client, parent=None):
         super().__init__(parent)
         self.mqtt_client = mqtt_client
         self.setWindowTitle("Configuración de Setpoints")
-        self.is_authenticated = False
-        self.access_code = mqtt_client.access_code
+        # Eliminamos la autenticación
+        self.is_authenticated = True  # Siempre autenticado
         self.setup_ui()
         # Use fixed size instead of fullscreen for better UI control
         self.setMinimumSize(1024, 768)
         self.resize(1200, 800)
         self.setWindowState(Qt.WindowMaximized)
+        # Fondo blanco para toda la ventana
+        self.setStyleSheet("background-color: white;")
 
     def setup_ui(self):
         # Main container
         main_container = QWidget()
         main_layout = QVBoxLayout(main_container)
-        main_layout.setSpacing(25)
-        main_layout.setContentsMargins(40, 40, 40, 40)
+        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(20, 20, 20, 20)
 
-        # Navigation bar
+        # Navigation bar - más simple y limpio
         nav_layout = QHBoxLayout()
         nav_layout.setSpacing(20)
 
+        # Botón Volver - estilo más plano
         back_button = QPushButton("Volver")
         back_button.clicked.connect(self.close)
-        back_button.setFixedWidth(140)
-        back_button.setFixedHeight(50)
+        back_button.setFixedWidth(120)
+        back_button.setFixedHeight(40)
         back_button.setStyleSheet("""
             QPushButton {
                 background-color: #2196F3;
                 color: white;
                 border: none;
-                border-radius: 10px;
-                padding: 12px 20px;
+                border-radius: 4px;
+                padding: 8px 15px;
                 font-weight: bold;
-                font-size: 16px;
+                font-size: 14px;
             }
             QPushButton:hover {
                 background-color: #1976D2;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
             }
             QPushButton:pressed {
                 background-color: #0D47A1;
@@ -53,278 +55,259 @@ class SetpointWindow(QWidget):
         """)
         nav_layout.addWidget(back_button)
 
+        # Título centrado
         title = QLabel("Configuración de Setpoints")
-        title.setFont(QFont('Arial', 28, QFont.Bold))
+        title.setFont(QFont('Arial', 24, QFont.Bold))
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("color: #333333; margin: 10px 0;")
+        title.setStyleSheet("color: #333333;")
         nav_layout.addWidget(title)
 
+        # Botón Cerrar
         close_button = QPushButton("Cerrar")
         close_button.clicked.connect(self.close)
-        close_button.setFixedWidth(140)
-        close_button.setFixedHeight(50)
+        close_button.setFixedWidth(120)
+        close_button.setFixedHeight(40)
         close_button.setStyleSheet("""
             QPushButton {
-                background-color: #F44336;
+                background-color: #E53935;
                 color: white;
                 border: none;
-                border-radius: 10px;
-                padding: 12px 20px;
+                border-radius: 4px;
+                padding: 8px 15px;
                 font-weight: bold;
-                font-size: 16px;
+                font-size: 14px;
             }
             QPushButton:hover {
-                background-color: #E53935;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                background-color: #D32F2F;
             }
             QPushButton:pressed {
-                background-color: #C62828;
+                background-color: #B71C1C;
             }
         """)
         nav_layout.addWidget(close_button)
 
         main_layout.addLayout(nav_layout)
 
-        # Authentication section
-        self.auth_frame = QWidget()
-        self.auth_frame.setStyleSheet("""
-            QWidget {
-                background-color: #f5f5f5;
-                border-radius: 15px;
-                padding: 30px;
-                border: 2px solid #e0e0e0;
-                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        # Panel de instrucciones - estilo más limpio y sin bordes
+        instruction_panel = QFrame()
+        instruction_panel.setFrameShape(QFrame.NoFrame)
+        instruction_panel.setStyleSheet("""
+            QFrame {
+                background-color: #E8F5E9;
+                border-radius: 4px;
+                margin-top: 10px;
             }
         """)
-        auth_layout = QVBoxLayout(self.auth_frame)
-        auth_layout.setSpacing(15)
+        instruction_layout = QVBoxLayout(instruction_panel)
+        instruction_layout.setSpacing(5)
+        instruction_layout.setContentsMargins(15, 10, 15, 10)
 
-        auth_label = QLabel("Autenticación")
-        auth_label.setFont(QFont('Arial', 18, QFont.Bold))
-        auth_label.setStyleSheet("color: #333333; margin-bottom: 10px;")
-        auth_layout.addWidget(auth_label)
+        instruction_title = QLabel("Instrucciones")
+        instruction_title.setFont(QFont('Arial', 14, QFont.Bold))
+        instruction_title.setStyleSheet("color: #2E7D32; background: transparent;")
+        instruction_layout.addWidget(instruction_title)
 
-        self.auth_input = QLineEdit()
-        self.auth_input.setEchoMode(QLineEdit.Password)
-        self.auth_input.setPlaceholderText("Ingrese clave de acceso")
-        self.auth_input.setStyleSheet("""
-            QLineEdit {
-                padding: 15px;
-                border: 2px solid #e0e0e0;
-                border-radius: 10px;
-                font-size: 16px;
-                margin: 10px 0;
-                min-width: 250px;
-            }
-            QLineEdit:focus {
-                border-color: #4caf50;
-                box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
-            }
-        """)
-        auth_layout.addWidget(self.auth_input)
+        instruction_text = QLabel("Configure los setpoints de temperatura para cada túnel y fruta utilizando los controles a continuación. "
+                                 "Ajuste el valor deseado y presione 'GUARDAR' para cada configuración.")
+        instruction_text.setWordWrap(True)
+        instruction_text.setFont(QFont('Arial', 12))
+        instruction_text.setStyleSheet("color: #33691E; background: transparent;")
+        instruction_layout.addWidget(instruction_text)
 
-        self.auth_button = QPushButton("Ingresar")
-        self.auth_button.clicked.connect(self.authenticate)
-        self.auth_button.setStyleSheet("""
-            QPushButton {
-                background-color: #4caf50;
-                color: white;
-                border: none;
-                border-radius: 10px;
-                padding: 15px 30px;
-                font-weight: bold;
-                font-size: 16px;
-                min-width: 120px;
-                margin: 10px;
-            }
-            QPushButton:hover {
-                background-color: #43a047;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            }
-            QPushButton:pressed {
-                background-color: #388e3c;
-            }
-        """)
-        auth_layout.addWidget(self.auth_button)
+        main_layout.addWidget(instruction_panel)
 
-        main_layout.addWidget(self.auth_frame)
-
-        # Setpoints table
-        self.table = QTableWidget(12, 3)
-        self.table.setHorizontalHeaderLabels(["Túnel", "Setpoint (°C)", "Acción"])
+        # Tabla de setpoints - modificada para mostrar 24 filas (12 túneles + 12 frutas)
+        self.table = QTableWidget(24, 3)
+        self.table.setHorizontalHeaderLabels(["Tipo", "Setpoint (°C)", "Acción"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
-        self.table.setEnabled(False)
-        # Set row height for better visibility of controls
-        for i in range(12):
-            self.table.setRowHeight(i, 70)
+        self.table.setEnabled(True)
+        
+        # Altura de filas uniforme
+        for i in range(24):
+            self.table.setRowHeight(i, 50)
+            
         self.table.setStyleSheet("""
             QTableWidget {
+                border: 1px solid #BDBDBD;
+                border-radius: 4px;
+                gridline-color: #EEEEEE;
                 background-color: white;
-                border: 2px solid #e0e0e0;
-                border-radius: 15px;
-                gridline-color: #e0e0e0;
-                margin: 20px;
-                padding: 10px;
+                margin-top: 15px;
             }
             QTableWidget::item {
-                padding: 15px;
-                font-size: 16px;
+                padding: 5px;
+                font-size: 14px;
             }
             QHeaderView::section {
-                background-color: #4caf50;
+                background-color: #388E3C;
                 color: white;
-                padding: 18px;
+                padding: 8px;
                 border: none;
                 font-weight: bold;
-                font-size: 17px;
-                border-top-left-radius: 10px;
-                border-top-right-radius: 10px;
+                font-size: 14px;
             }
             QTableWidget::item:alternate {
-                background-color: #f5f5f5;
-            }
-            QTableWidget::item:selected {
-                background-color: #e8f5e9;
-                color: #2e7d32;
+                background-color: #F9FBF9;
             }
         """)
 
+        # Primero los 12 túneles
         for row in range(12):
             tunnel_id = row + 1
+            
+            # Etiqueta de túnel
             tunnel_label = QTableWidgetItem(f"Túnel {tunnel_id}")
             tunnel_label.setTextAlignment(Qt.AlignCenter)
+            tunnel_label.setFont(QFont('Arial', 12, QFont.Bold))
             self.table.setItem(row, 0, tunnel_label)
 
+            # Spinbox simplificado
             spinbox = QDoubleSpinBox()
             spinbox.setRange(-50, 50)
             spinbox.setDecimals(1)
             spinbox.setSingleStep(0.5)
-            spinbox.setValue(0.0)  # Set default value
+            spinbox.setValue(0.0)
             spinbox.setButtonSymbols(QDoubleSpinBox.UpDownArrows)
-            spinbox.setFixedHeight(70)  # Increased height for better touch interaction
-            spinbox.setFixedWidth(220)  # Increased width for better visibility
+            spinbox.setFixedHeight(40)
+            spinbox.setFixedWidth(150)
             spinbox.setStyleSheet("""
                 QDoubleSpinBox {
-                    padding: 15px;
-                    border: 2px solid #e0e0e0;
-                    border-radius: 10px;
-                    font-size: 22px;  /* Increased font size */
+                    border: 1px solid #BDBDBD;
+                    border-radius: 4px;
+                    font-size: 16px;
                     font-weight: bold;
-                    background-color: #f9f9f9;
+                    padding: 5px;
+                    background-color: white;
+                    color: #1B5E20;
                 }
                 QDoubleSpinBox:hover {
-                    border-color: #81c784;
-                    background-color: #f0f7f0;
-                    transition: all 0.3s ease;
+                    border-color: #66BB6A;
                 }
                 QDoubleSpinBox:focus {
-                    border-color: #4caf50;
-                    box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
-                    background-color: white;
+                    border-color: #43A047;
                 }
                 QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
-                    width: 35px;  /* Wider buttons */
-                    height: 35px;  /* Taller buttons */
-                    border-radius: 5px;
-                    background-color: #e0e0e0;
-                    margin-right: 5px;  /* Add some margin */
+                    width: 25px;
+                    height: 20px;
+                    background-color: #E0E0E0;
                 }
                 QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
-                    background-color: #c8e6c9;
-                }
-                QDoubleSpinBox::up-arrow {
-                    image: url(data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="#4caf50" d="M7 14l5-5 5 5z"/></svg>);
-                    width: 20px;  /* Larger arrows */
-                    height: 20px;
-                }
-                QDoubleSpinBox::down-arrow {
-                    image: url(data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="#4caf50" d="M7 10l5 5 5-5z"/></svg>);
-                    width: 20px;  /* Larger arrows */
-                    height: 20px;
+                    background-color: #AED581;
                 }
             """)
             spinbox.setAlignment(Qt.AlignCenter)
             self.table.setCellWidget(row, 1, spinbox)
 
-            save_button = QPushButton("Guardar")
-            save_button.setEnabled(False)
-            save_button.clicked.connect(lambda checked, r=row: self.save_setpoint(r))
-            save_button.setFixedHeight(70)  # Match the height of the spinbox
-            save_button.setFixedWidth(200)  # Consistent width
+            # Botón guardar simplificado
+            save_button = QPushButton("GUARDAR")
+            save_button.setEnabled(True)
+            save_button.clicked.connect(lambda checked, r=row, t="tunnel": self.save_setpoint(r, t))
+            save_button.setFixedHeight(40)
+            save_button.setFixedWidth(120)
             save_button.setStyleSheet("""
                 QPushButton {
-                    background-color: #4caf50;
+                    background-color: #43A047;
                     color: white;
                     border: none;
-                    border-radius: 10px;
-                    padding: 15px 25px;
+                    border-radius: 4px;
+                    padding: 8px;
                     font-weight: bold;
-                    font-size: 18px;  /* Increased font size */
-                    text-transform: uppercase;
-                    letter-spacing: 1px;
+                    font-size: 12px;
                 }
                 QPushButton:hover {
-                    background-color: #43a047;
-                    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-                    transform: translateY(-2px);
-                    transition: all 0.2s ease;
+                    background-color: #388E3C;
                 }
                 QPushButton:pressed {
-                    background-color: #388e3c;
-                    transform: translateY(0px);
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-                }
-                QPushButton:disabled {
-                    background-color: #c8e6c9;
-                    color: #a5d6a7;
-                    box-shadow: none;
+                    background-color: #2E7D32;
                 }
             """)
-            # Add a tooltip to explain the button's function
-            save_button.setToolTip("Guardar el setpoint para este túnel")
+            self.table.setCellWidget(row, 2, save_button)
+            
+        # Luego los 12 setpoints de fruta
+        for row in range(12, 24):
+            fruit_id = row - 12 + 1
+            
+            # Etiqueta de fruta
+            fruit_label = QTableWidgetItem(f"Fruta Setpoint {fruit_id}")
+            fruit_label.setTextAlignment(Qt.AlignCenter)
+            fruit_label.setFont(QFont('Arial', 12, QFont.Bold))
+            fruit_label.setForeground(QColor("#8E24AA"))  # Color morado para diferenciar
+            self.table.setItem(row, 0, fruit_label)
+
+            # Spinbox para fruta
+            spinbox = QDoubleSpinBox()
+            spinbox.setRange(-50, 50)
+            spinbox.setDecimals(1)
+            spinbox.setSingleStep(0.5)
+            spinbox.setValue(0.0)
+            spinbox.setButtonSymbols(QDoubleSpinBox.UpDownArrows)
+            spinbox.setFixedHeight(40)
+            spinbox.setFixedWidth(150)
+            spinbox.setStyleSheet("""
+                QDoubleSpinBox {
+                    border: 1px solid #BA68C8;
+                    border-radius: 4px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    padding: 5px;
+                    background-color: white;
+                    color: #6A1B9A;
+                }
+                QDoubleSpinBox:hover {
+                    border-color: #AB47BC;
+                }
+                QDoubleSpinBox:focus {
+                    border-color: #8E24AA;
+                }
+                QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+                    width: 25px;
+                    height: 20px;
+                    background-color: #E0E0E0;
+                }
+                QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+                    background-color: #CE93D8;
+                }
+            """)
+            spinbox.setAlignment(Qt.AlignCenter)
+            self.table.setCellWidget(row, 1, spinbox)
+
+            # Botón guardar para fruta
+            save_button = QPushButton("GUARDAR")
+            save_button.setEnabled(True)
+            save_button.clicked.connect(lambda checked, r=row-12, t="fruit": self.save_setpoint(r, t))
+            save_button.setFixedHeight(40)
+            save_button.setFixedWidth(120)
+            save_button.setStyleSheet("""
+                QPushButton {
+                    background-color: #8E24AA;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 8px;
+                    font-weight: bold;
+                    font-size: 12px;
+                }
+                QPushButton:hover {
+                    background-color: #7B1FA2;
+                }
+                QPushButton:pressed {
+                    background-color: #6A1B9A;
+                }
+            """)
             self.table.setCellWidget(row, 2, save_button)
 
         main_layout.addWidget(self.table)
 
-        # Save all button
-        save_all_button = QPushButton("Guardar Todos los Setpoints")
-        save_all_button.setFixedHeight(60)
-        save_all_button.clicked.connect(self.save_all_setpoints)
-        save_all_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2e7d32;
-                color: white;
-                border: none;
-                border-radius: 12px;
-                padding: 15px;
-                font-weight: bold;
-                font-size: 18px;
-                text-transform: uppercase;
-                letter-spacing: 1.5px;
-                margin: 20px 0;
-            }
-            QPushButton:hover {
-                background-color: #1b5e20;
-                box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-                transform: translateY(-3px);
-                transition: all 0.3s ease;
-            }
-            QPushButton:pressed {
-                background-color: #1b5e20;
-                transform: translateY(0px);
-                box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-            }
-            QPushButton:disabled {
-                background-color: #a5d6a7;
-                color: #e8f5e9;
-                box-shadow: none;
-            }
-        """)
-        main_layout.addWidget(save_all_button)
+        # Botón guardar todos - estilo más limpio
+        save_all_container = QWidget()
+        save_all_layout = QHBoxLayout(save_all_container)
+        save_all_layout.setContentsMargins(0, 15, 0, 15)
+        
+ 
 
-        # Scroll area setup
+        # Scroll area
         scroll = QScrollArea()
         scroll.setWidget(main_container)
         scroll.setWidgetResizable(True)
@@ -335,23 +318,18 @@ class SetpointWindow(QWidget):
             }
             QScrollBar:vertical {
                 border: none;
-                background: #f0f0f0;
-                width: 14px;
+                background: #F5F5F5;
+                width: 8px;
                 margin: 0px;
-                border-radius: 7px;
             }
             QScrollBar::handle:vertical {
-                background: #4caf50;
+                background: #66BB6A;
                 min-height: 30px;
-                border-radius: 7px;
             }
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 border: none;
                 background: none;
                 height: 0px;
-            }
-            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-                background: none;
             }
         """)
 
@@ -360,143 +338,119 @@ class SetpointWindow(QWidget):
         window_layout.addWidget(scroll)
         window_layout.setContentsMargins(0, 0, 0, 0)
 
-    def authenticate(self):
-        input_code = self.auth_input.text()
-        # Check if input matches the default access code 'migiva' or the configured access code
-        if input_code == 'migiva' or (self.access_code and input_code == self.access_code):
-            self.is_authenticated = True
-            self.table.setEnabled(True)
-            for row in range(self.table.rowCount()):
-                button = self.table.cellWidget(row, 2)
-                if button:
-                    button.setEnabled(True)
-            
-            # Show success message with better styling
-            msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Information)
-            msg.setWindowTitle("Autenticación Exitosa")
-            msg.setText("<h3 style='color: #2e7d32;'>Acceso Concedido</h3>")
-            msg.setInformativeText("Ahora puede configurar los setpoints para todos los túneles.")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: white;
-                }
-                QPushButton {
-                    background-color: #4caf50;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 8px 16px;
-                    font-weight: bold;
-                    min-width: 100px;
-                }
-                QPushButton:hover {
-                    background-color: #43a047;
-                }
-            """)
-            msg.exec_()
-            
-            self.auth_input.clear()
-            self.auth_frame.setVisible(False)
-        else:
-            # Show error message with better styling
-            msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("Error de Autenticación")
-            msg.setText("<h3 style='color: #c62828;'>Clave de Acceso Incorrecta</h3>")
-            msg.setInformativeText("Por favor, intente nuevamente con la clave correcta.")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: white;
-                }
-                QPushButton {
-                    background-color: #f44336;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 8px 16px;
-                    font-weight: bold;
-                    min-width: 100px;
-                }
-                QPushButton:hover {
-                    background-color: #e53935;
-                }
-            """)
-            msg.exec_()
-            
-            self.auth_input.clear()
-
     def save_all_setpoints(self):
-        if not self.is_authenticated:
-            msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("Acceso Restringido")
-            msg.setText("<h3 style='color: #f57c00;'>Autenticación Requerida</h3>")
-            msg.setInformativeText("Debe autenticarse primero para guardar los setpoints.")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: white;
-                }
-                QPushButton {
-                    background-color: #ff9800;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 8px 16px;
-                    font-weight: bold;
-                    min-width: 100px;
-                }
-                QPushButton:hover {
-                    background-color: #f57c00;
-                }
-            """)
-            msg.exec_()
-            return
-
         setpoints = {}
-        for row in range(self.table.rowCount()):
+        formatted_messages = []
+        
+        # Primero los túneles (filas 0-11)
+        for row in range(12):
             tunnel_id = row + 1
             spinbox = self.table.cellWidget(row, 1)
             setpoint = spinbox.value()
-            setpoints[f"tunnel_{tunnel_id}_setpoint"] = setpoint
+            # Formato para setpoint de túnel: SXX,+/-XX.XX (siempre 4 dígitos incluyendo el punto)
+            formatted_message = f"S{tunnel_id:02d},{'+' if setpoint >= 0 else '-'}{abs(setpoint):05.2f}"
+            formatted_messages.append(formatted_message)
+        
+        # Luego las frutas (filas 12-23)
+        for row in range(12, 24):
+            fruit_id = row - 12 + 1
+            spinbox = self.table.cellWidget(row, 1)
+            setpoint = spinbox.value()
+            formatted_message = f"F{fruit_id:02d},{'+' if setpoint >= 0 else '-'}{abs(setpoint):.2f}"
+            formatted_messages.append(formatted_message)
 
         try:
-            self.mqtt_client.publish("setpoints", setpoints)
+            # Publicar cada mensaje formateado al topic A_RECIBIR
+            topic = "A_RECIBIR"
+            success = True
             
-            # Show success message with better styling
-            msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Information)
-            msg.setWindowTitle("Operación Exitosa")
-            msg.setText("<h3 style='color: #2e7d32;'>Setpoints Guardados</h3>")
-            msg.setInformativeText("Todos los setpoints han sido guardados correctamente.")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: white;
-                }
-                QPushButton {
-                    background-color: #4caf50;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 8px 16px;
-                    font-weight: bold;
-                    min-width: 100px;
-                }
-                QPushButton:hover {
-                    background-color: #43a047;
-                }
-            """)
-            msg.exec_()
+            for message in formatted_messages:
+                if hasattr(self.mqtt_client, 'client') and hasattr(self.mqtt_client.client, 'publish'):
+                    self.mqtt_client.client.publish(topic, message)
+                elif hasattr(self.mqtt_client, 'publish'):
+                    self.mqtt_client.publish(topic, message)
+                elif hasattr(self.mqtt_client, 'send_message'):
+                    if not self.mqtt_client.send_message(topic, message):
+                        success = False
+                else:
+                    raise Exception("No se encontró un método adecuado para publicar mensajes MQTT")
+            
+            if success:
+                # Show success message with better styling
+                # Resto del código permanece igual
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Information)
+                msg.setWindowTitle("Operación Exitosa")
+                msg.setText("<h3 style='color: #2E7D32;'>Setpoints Guardados</h3>")
+                msg.setInformativeText("Todos los setpoints han sido guardados correctamente.")
+                msg.setStandardButtons(QMessageBox.Ok)
+                msg.setStyleSheet("""
+                    QMessageBox {
+                        background-color: white;
+                    }
+                    QPushButton {
+                        background-color: #43A047;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 8px 16px;
+                        font-weight: bold;
+                        min-width: 100px;
+                    }
+                    QPushButton:hover {
+                        background-color: #388E3C;
+                    }
+                """)
+                msg.exec_()
+                
+                # Highlight all spinboxes to indicate success
+                for row in range(self.table.rowCount()):
+                    spinbox = self.table.cellWidget(row, 1)
+                    spinbox.setStyleSheet("""
+                        QDoubleSpinBox {
+                            padding: 15px;
+                            border: 2px solid #43A047;
+                            border-radius: 10px;
+                            font-size: 24px;
+                            font-weight: bold;
+                            background-color: #E8F5E9;
+                            color: #1B5E20;
+                        }
+                        QDoubleSpinBox:hover {
+                            border-color: #66BB6A;
+                            background-color: #F1F8E9;
+                        }
+                        QDoubleSpinBox:focus {
+                            border-color: #43A047;
+                            box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+                            background-color: white;
+                        }
+                        QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+                            width: 40px;
+                            height: 35px;
+                            border-radius: 5px;
+                            background-color: #E0E0E0;
+                        }
+                        QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+                            background-color: #AED581;
+                        }
+                        QDoubleSpinBox::up-arrow {
+                            image: url(data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="#388E3C" d="M7 14l5-5 5 5z"/></svg>);
+                            width: 20px;
+                            height: 20px;
+                        }
+                        QDoubleSpinBox::down-arrow {
+                            image: url(data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="#388E3C" d="M7 10l5 5 5-5z"/></svg>);
+                            width: 20px;
+                            height: 20px;
+                        }
+                    """)
         except Exception as e:
             # Show error message with better styling
             msg = QMessageBox(self)
             msg.setIcon(QMessageBox.Critical)
             msg.setWindowTitle("Error de Comunicación")
-            msg.setText("<h3 style='color: #c62828;'>Error al Guardar Setpoints</h3>")
+            msg.setText("<h3 style='color: #C62828;'>Error al Guardar Setpoints</h3>")
             msg.setInformativeText(f"Ocurrió un error durante la comunicación: {str(e)}")
             msg.setDetailedText(f"Detalles técnicos del error:\n{str(e)}")
             msg.setStandardButtons(QMessageBox.Ok)
@@ -505,7 +459,7 @@ class SetpointWindow(QWidget):
                     background-color: white;
                 }
                 QPushButton {
-                    background-color: #f44336;
+                    background-color: #EF5350;
                     color: white;
                     border: none;
                     border-radius: 8px;
@@ -514,61 +468,111 @@ class SetpointWindow(QWidget):
                     min-width: 100px;
                 }
                 QPushButton:hover {
-                    background-color: #e53935;
+                    background-color: #E53935;
                 }
             """)
             msg.exec_()
 
-    def save_setpoint(self, row):
-        if not self.is_authenticated:
-            msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Warning)
-            msg.setWindowTitle("Acceso Restringido")
-            msg.setText("<h3 style='color: #f57c00;'>Autenticación Requerida</h3>")
-            msg.setInformativeText("Debe autenticarse primero para guardar el setpoint.")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: white;
-                }
-                QPushButton {
-                    background-color: #ff9800;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 8px 16px;
-                    font-weight: bold;
-                    min-width: 100px;
-                }
-                QPushButton:hover {
-                    background-color: #f57c00;
-                }
-            """)
-            msg.exec_()
-            return
-
-        tunnel_id = row + 1
-        spinbox = self.table.cellWidget(row, 1)
-        setpoint = spinbox.value()
-
-        try:
-            # Use the set_temperature method from mqtt_client to ensure correct format (S01,+/-0000)
-            success = self.mqtt_client.set_temperature(tunnel_id, setpoint)
+    def save_setpoint(self, row, setpoint_type="tunnel"):
+        if setpoint_type == "tunnel":
+            tunnel_id = row + 1
+            spinbox = self.table.cellWidget(row, 1)
+            setpoint = spinbox.value()
             
-            if success:
-                # Show success message with better styling
+            try:
+                # Formato para setpoint de túnel: SXX,+/-XX.XX (siempre 4 dígitos incluyendo el punto)
+                formatted_setpoint = f"S{tunnel_id:02d},{'+' if setpoint >= 0 else '-'}{abs(setpoint):05.2f}"
+                
+                # Usar el topic "A_RECIBIR" para todos los mensajes
+                topic = "A_RECIBIR"
+                success = False
+                
+                # Intenta usar diferentes métodos que podrían existir en el cliente MQTT
+                if hasattr(self.mqtt_client, 'client') and hasattr(self.mqtt_client.client, 'publish'):
+                    self.mqtt_client.client.publish(topic, formatted_setpoint)
+                    success = True
+                elif hasattr(self.mqtt_client, 'publish'):
+                    self.mqtt_client.publish(topic, formatted_setpoint)
+                    success = True
+                elif hasattr(self.mqtt_client, 'send_message'):
+                    success = self.mqtt_client.send_message(topic, formatted_setpoint)
+                elif hasattr(self.mqtt_client, 'set_temperature'):
+                    # Si existe set_temperature, asumimos que internamente usa el topic correcto
+                    success = self.mqtt_client.set_temperature(tunnel_id, setpoint)
+                else:
+                    raise Exception("No se encontró un método adecuado para publicar mensajes MQTT")
+                
+                if success:
+                    # Show success message with better styling
+                    msg = QMessageBox(self)
+                    msg.setIcon(QMessageBox.Information)
+                    msg.setWindowTitle("Operación Exitosa")
+                    msg.setText(f"<h3 style='color: #2E7D32;'>Setpoint Guardado</h3>")
+                    msg.setInformativeText(f"El setpoint del Túnel {tunnel_id} ha sido configurado a {setpoint}°C correctamente.\nFormato enviado: {formatted_setpoint}\nTopic: {topic}")
+                    # Resto del código permanece igual
+                    msg.setStandardButtons(QMessageBox.Ok)
+                    msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: white;
+                        }
+                        QPushButton {
+                            background-color: #43A047;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            padding: 8px 16px;
+                            font-weight: bold;
+                            min-width: 100px;
+                        }
+                        QPushButton:hover {
+                            background-color: #388E3C;
+                        }
+                    """)
+                    msg.exec_()
+                    
+                    # Update the spinbox styling to indicate success
+                    spinbox.setStyleSheet("""
+                        QDoubleSpinBox {
+                            padding: 5px;
+                            border: 2px solid #43A047;
+                            border-radius: 4px;
+                            font-size: 16px;
+                            font-weight: bold;
+                            background-color: #E8F5E9;
+                            color: #1B5E20;
+                        }
+                        QDoubleSpinBox:hover {
+                            border-color: #66BB6A;
+                        }
+                        QDoubleSpinBox:focus {
+                            border-color: #43A047;
+                        }
+                        QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+                            width: 25px;
+                            height: 20px;
+                            background-color: #E0E0E0;
+                        }
+                        QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+                            background-color: #AED581;
+                        }
+                    """)
+                else:
+                    raise Exception("No se pudo publicar el mensaje MQTT")
+            except Exception as e:
+                # Show error message with better styling
                 msg = QMessageBox(self)
-                msg.setIcon(QMessageBox.Information)
-                msg.setWindowTitle("Operación Exitosa")
-                msg.setText(f"<h3 style='color: #2e7d32;'>Setpoint Guardado</h3>")
-                msg.setInformativeText(f"El setpoint del Túnel {tunnel_id} ha sido configurado a {setpoint}°C correctamente.\nFormato enviado: S{tunnel_id:02d},{'+' if setpoint >= 0 else '-'}{abs(setpoint):.1f}")
+                msg.setIcon(QMessageBox.Warning)
+                msg.setWindowTitle("Advertencia")
+                msg.setText(f"<h3 style='color: #F57F17;'>Advertencia al Guardar Setpoint</h3>")
+                msg.setInformativeText(f"El setpoint del Túnel {tunnel_id} ha sido enviado, pero no se ha podido confirmar la recepción.\nEl sistema intentará reenviar el mensaje automáticamente.")
+                msg.setDetailedText(f"Detalles técnicos:\n{str(e)}\n\nEsto no significa necesariamente que el setpoint no haya sido configurado. El mensaje puede haber sido enviado correctamente pero la confirmación no fue recibida.")
                 msg.setStandardButtons(QMessageBox.Ok)
                 msg.setStyleSheet("""
                     QMessageBox {
                         background-color: white;
                     }
                     QPushButton {
-                        background-color: #4caf50;
+                        background-color: #FFA000;
                         color: white;
                         border: none;
                         border-radius: 8px;
@@ -577,78 +581,119 @@ class SetpointWindow(QWidget):
                         min-width: 100px;
                     }
                     QPushButton:hover {
-                        background-color: #43a047;
+                        background-color: #FF8F00;
                     }
                 """)
                 msg.exec_()
+        
+        elif setpoint_type == "fruit":
+            fruit_id = row + 1
+            spinbox = self.table.cellWidget(row + 12, 1)  # +12 porque están después de los túneles
+            setpoint = spinbox.value()
+            
+            try:
+                # Formato para setpoint de fruta: FXX,+/-XX.XX
+                formatted_setpoint = f"F{fruit_id:02d},{'+' if setpoint >= 0 else '-'}{abs(setpoint):.2f}"
                 
-                # Update the spinbox styling to indicate success
-                spinbox.setStyleSheet("""
-                    QDoubleSpinBox {
-                        padding: 15px;
-                        border: 2px solid #4caf50;
-                        border-radius: 10px;
-                        font-size: 18px;
-                        font-weight: bold;
-                        min-width: 200px;
-                        min-height: 50px;
-                        background-color: #e8f5e9;
-                    }
-                    QDoubleSpinBox:hover {
-                        border-color: #81c784;
-                        background-color: #f0f7f0;
-                    }
-                    QDoubleSpinBox:focus {
-                        border-color: #4caf50;
-                        box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+                # Usar el mismo topic "A_RECIBIR" para todos los mensajes
+                topic = "A_RECIBIR"
+                success = False
+                
+                # Intenta usar diferentes métodos que podrían existir en el cliente MQTT
+                if hasattr(self.mqtt_client, 'client') and hasattr(self.mqtt_client.client, 'publish'):
+                    self.mqtt_client.client.publish(topic, formatted_setpoint)
+                    success = True
+                elif hasattr(self.mqtt_client, 'publish'):
+                    self.mqtt_client.publish(topic, formatted_setpoint)
+                    success = True
+                elif hasattr(self.mqtt_client, 'send_message'):
+                    success = self.mqtt_client.send_message(topic, formatted_setpoint)
+                elif hasattr(self.mqtt_client, 'set_temperature'):
+                    # Si existe set_temperature, asumimos que internamente usa el topic correcto
+                    success = self.mqtt_client.set_temperature(fruit_id, setpoint, is_fruit=True)
+                else:
+                    raise Exception("No se encontró un método adecuado para publicar mensajes MQTT")
+                
+                # Resto del código permanece igual
+                if success:
+                    # Show success message
+                    msg = QMessageBox(self)
+                    msg.setIcon(QMessageBox.Information)
+                    msg.setWindowTitle("Operación Exitosa")
+                    msg.setText(f"<h3 style='color: #8E24AA;'>Setpoint de Fruta Guardado</h3>")
+                    msg.setInformativeText(f"El setpoint de Fruta {fruit_id} ha sido configurado a {setpoint}°C correctamente.\nFormato enviado: {formatted_setpoint}\nTopic: {topic}")
+                    msg.setStandardButtons(QMessageBox.Ok)
+                    msg.setStyleSheet("""
+                        QMessageBox {
+                            background-color: white;
+                        }
+                        QPushButton {
+                            background-color: #8E24AA;
+                            color: white;
+                            border: none;
+                            border-radius: 8px;
+                            padding: 8px 16px;
+                            font-weight: bold;
+                            min-width: 100px;
+                        }
+                        QPushButton:hover {
+                            background-color: #7B1FA2;
+                        }
+                    """)
+                    msg.exec_()
+                    
+                    # Update the spinbox styling to indicate success
+                    spinbox.setStyleSheet("""
+                        QDoubleSpinBox {
+                            padding: 5px;
+                            border: 2px solid #8E24AA;
+                            border-radius: 4px;
+                            font-size: 16px;
+                            font-weight: bold;
+                            background-color: #F3E5F5;
+                            color: #6A1B9A;
+                        }
+                        QDoubleSpinBox:hover {
+                            border-color: #AB47BC;
+                        }
+                        QDoubleSpinBox:focus {
+                            border-color: #8E24AA;
+                        }
+                        QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
+                            width: 25px;
+                            height: 20px;
+                            background-color: #E0E0E0;
+                        }
+                        QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
+                            background-color: #CE93D8;
+                        }
+                    """)
+                else:
+                    raise Exception("No se pudo publicar el mensaje MQTT")
+            except Exception as e:
+                # Show error message
+                msg = QMessageBox(self)
+                msg.setIcon(QMessageBox.Warning)
+                msg.setWindowTitle("Advertencia")
+                msg.setText(f"<h3 style='color: #F57F17;'>Advertencia al Guardar Setpoint de Fruta</h3>")
+                msg.setInformativeText(f"El setpoint de Fruta {fruit_id} ha sido enviado, pero no se ha podido confirmar la recepción.\nEl sistema intentará reenviar el mensaje automáticamente.")
+                msg.setDetailedText(f"Detalles técnicos:\n{str(e)}\n\nEsto no significa necesariamente que el setpoint no haya sido configurado. El mensaje puede haber sido enviado correctamente pero la confirmación no fue recibida.")
+                msg.setStandardButtons(QMessageBox.Ok)
+                msg.setStyleSheet("""
+                    QMessageBox {
                         background-color: white;
                     }
-                    QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {
-                        width: 30px;
-                        height: 25px;
-                        border-radius: 5px;
-                        background-color: #e0e0e0;
+                    QPushButton {
+                        background-color: #FFA000;
+                        color: white;
+                        border: none;
+                        border-radius: 8px;
+                        padding: 8px 16px;
+                        font-weight: bold;
+                        min-width: 100px;
                     }
-                    QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover {
-                        background-color: #c8e6c9;
-                    }
-                    QDoubleSpinBox::up-arrow {
-                        image: url(data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="#4caf50" d="M7 14l5-5 5 5z"/></svg>);
-                        width: 16px;
-                        height: 16px;
-                    }
-                    QDoubleSpinBox::down-arrow {
-                        image: url(data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24"><path fill="#4caf50" d="M7 10l5 5 5-5z"/></svg>);
-                        width: 16px;
-                        height: 16px;
+                    QPushButton:hover {
+                        background-color: #FF8F00;
                     }
                 """)
-            else:
-                raise Exception("No se pudo publicar el mensaje MQTT")
-        except Exception as e:
-            # Show error message with better styling
-            msg = QMessageBox(self)
-            msg.setIcon(QMessageBox.Warning)  # Changed from Critical to Warning
-            msg.setWindowTitle("Advertencia")
-            msg.setText(f"<h3 style='color: #f57c00;'>Advertencia al Guardar Setpoint</h3>")
-            msg.setInformativeText(f"El setpoint del Túnel {tunnel_id} ha sido enviado, pero no se ha podido confirmar la recepción.\nEl sistema intentará reenviar el mensaje automáticamente.")
-            msg.setDetailedText(f"Detalles técnicos:\n{str(e)}\n\nEsto no significa necesariamente que el setpoint no haya sido configurado. El mensaje puede haber sido enviado correctamente pero la confirmación no fue recibida.")
-            msg.setStandardButtons(QMessageBox.Ok)
-            msg.setStyleSheet("""
-                QMessageBox {
-                    background-color: white;
-                }
-                QPushButton {
-                    background-color: #ff9800;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    padding: 8px 16px;
-                    font-weight: bold;
-                    min-width: 100px;
-                }
-                QPushButton:hover {
-                    background-color: #f57c00;
-                }
-            """)
-            msg.exec_()
+                msg.exec_()

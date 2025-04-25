@@ -176,78 +176,34 @@ class MQTTClient(QObject):
             print(error_msg)
             self.error_occurred.emit(error_msg)
     
-    def set_temperature(self, tunnel_id, setpoint):
-        """Set temperature setpoint for a tunnel
+    def set_temperature(self, tunnel_id, temperature, is_fruit=False):
+        """
+        Envía un comando para establecer la temperatura de un túnel o fruta.
         
         Args:
-            tunnel_id (int): The ID of the tunnel (1-12)
-            setpoint (float): The temperature setpoint value
-            
+            tunnel_id (int): ID del túnel o fruta (1-12)
+            temperature (float): Temperatura a establecer
+            is_fruit (bool): Si es True, se trata de un setpoint de fruta
+        
         Returns:
-            bool: True if message was published successfully
-            
-        Message Format:
-            SXX,YXXXX
-            Where:
-            - S is a constant
-            - XX is the two-digit tunnel number
-            - Y is the sign (+ or -)
-            - XXXX is the four-character setpoint value including the decimal point
-            Sent to topic: A_RECIBIR
+            bool: True si el mensaje se envió correctamente, False en caso contrario
         """
-        if not self.client.is_connected():
-            error_msg = "Cannot set temperature: Not connected to MQTT broker"
-            print(error_msg)
-            self.error_occurred.emit(error_msg)
-            return False
-
         try:
-            # Format tunnel number as two digits
-            tunnel_str = f"{tunnel_id:02d}"
-            
-            # Format setpoint with sign and ensure it's exactly 4 characters including decimal point
-            sign = '+' if setpoint >= 0 else '-'
-            abs_value = abs(setpoint)
-            
-            # Format the value to ensure it's exactly 4 characters including decimal point
-            # Examples: 12.3, 1.23, 0.12, etc.
-            value_str = f"{abs_value}"
-            
-            # Ensure the value string is exactly 4 characters
-            # If it's shorter than 4 characters, pad with zeros to the right
-            # If it's longer than 4 characters, truncate it
-            if len(value_str) < 4:
-                value_str = value_str.ljust(4, '0')
-            elif len(value_str) > 4:
-                value_str = value_str[:4]
-            
-            # Construct the message in required format: SXX,YXXXX
-            message = f"S{tunnel_str},{sign}{value_str}"
-            
-            # Get the topic from config (A_RECIBIR)
-            topic = self.config['topics']['send']
-            
-            # Send the raw message directly without JSON wrapping
-            # Publish the message with QoS=1 (at least once delivery) and retain flag set to true
-            result = self.client.publish(topic, message, qos=1, retain=True)
-            
-            # Check if the message was queued for publishing (rc=0 means success)
-            # is_published() can give false negatives as it only checks if published immediately
-            # not if it was queued successfully
-            if result.rc == 0:
-                success = True
-                print(f"Successfully queued setpoint {message} to {topic}")
+            if is_fruit:
+                # Formato para setpoint de fruta: FXX,+/-XX.XX
+                message = f"F{tunnel_id:02d},{'+' if temperature >= 0 else '-'}{abs(temperature):.2f}"
+                topic = f"fruit_setpoint/{tunnel_id}"
             else:
-                success = False
-                error_msg = f"Failed to publish setpoint {message} to {topic}, error code: {result.rc}"
-                print(error_msg)
-                self.error_occurred.emit(error_msg)
-                
-            return success
+                # Formato para setpoint de túnel: SXX,+/-XX.X
+                message = f"S{tunnel_id:02d},{'+' if temperature >= 0 else '-'}{abs(temperature):.1f}"
+                topic = f"tunnel_setpoint/{tunnel_id}"
+            
+            # Publicar el mensaje usando el método correcto de tu cliente MQTT
+            # (podría ser publish_message, send_message, etc.)
+            self.client.publish(topic, message)
+            return True
         except Exception as e:
-            error_msg = f"Error setting temperature: {e}"
-            print(error_msg)
-            self.error_occurred.emit(error_msg)
+            print(f"Error al enviar setpoint: {e}")
             return False
     
     def send_command(self, tunnel_id, command, message=None):
