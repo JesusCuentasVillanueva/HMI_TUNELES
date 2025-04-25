@@ -236,46 +236,40 @@ QFrame:hover {
         # layout.addWidget(self.setpoint_label)
         
         # Status Frame
-        status_layout = QHBoxLayout()
-        status_layout.setSpacing(15)
+        status_layout = QVBoxLayout()
+        status_layout.setSpacing(10)
         status_layout.setContentsMargins(0, 0, 0, 0)
         
-        status_frame = QFrame()
-        status_frame.setStyleSheet('''
-            background-color: #e8f5e9;
-            border-radius: 12px;
-            padding: 15px;
-        ''')
-        
         # Running status
-        running_layout = QVBoxLayout()
-        running_icon = QLabel()
-        running_icon.setPixmap(qta.icon('fa5s.circle', color='#388e3c').pixmap(22, 22))
-        running_layout.addWidget(running_icon, alignment=Qt.AlignCenter)
         self.running_status = QLabel("Estado: Apagado")
         self.running_status.setStyleSheet('''
-            color: #388e3c;
+            color: #d32f2f;
             font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #ffebee;
+            font-size: 16px;
+            margin: 5px;
         ''')
-        running_layout.addWidget(self.running_status, alignment=Qt.AlignCenter)
+        self.running_status.setFixedHeight(50)
+        self.running_status.setAlignment(Qt.AlignCenter)
+        status_layout.addWidget(self.running_status)
         
         # Defrost status
-        defrost_layout = QVBoxLayout()
-        defrost_icon = QLabel()
-        defrost_icon.setPixmap(qta.icon('fa5s.snowflake', color='#7cb342').pixmap(22, 22))
-        defrost_layout.addWidget(defrost_icon, alignment=Qt.AlignCenter)
-        self.defrost_status = QLabel("Descongelamiento: Apagado")
+        self.defrost_status = QLabel("Descongelamiento: Inactivo")
         self.defrost_status.setStyleSheet('''
-            color: #7cb342;
+            color: #d32f2f;
             font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
+            background-color: #ffebee;
+            font-size: 16px;
+            margin: 5px;
         ''')
-        defrost_layout.addWidget(self.defrost_status, alignment=Qt.AlignCenter)
+        self.defrost_status.setFixedHeight(50)
+        self.defrost_status.setAlignment(Qt.AlignCenter)
+        status_layout.addWidget(self.defrost_status)
         
-        status_frame.setLayout(QVBoxLayout())
-        status_frame.layout().addLayout(running_layout)
-        status_frame.layout().addLayout(defrost_layout)
-        
-        status_layout.addWidget(status_frame)
         layout.addLayout(status_layout)
 
         # Temperature Grid
@@ -498,14 +492,30 @@ QFrame:hover {
         status_color = "#2e7d32" if is_running else "#d32f2f"
         status_bg = "#e8f5e9" if is_running else "#ffebee"
         self.running_status.setText(status_text)
-        self.running_status.setStyleSheet(f"color: {status_color}; font-weight: bold; padding: 12px; background: {status_bg}; border-radius: 8px; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);")
+        self.running_status.setStyleSheet(f"""
+            color: {status_color}; 
+            font-weight: bold; 
+            padding: 12px; 
+            background: {status_bg}; 
+            border-radius: 8px; 
+            font-size: 16px;
+            margin: 5px;
+        """)
 
     def update_defrost_status(self, is_defrosting):
         status_text = "Descongelamiento: Activo" if is_defrosting else "Descongelamiento: Inactivo"
         status_color = "#1565c0" if is_defrosting else "#d32f2f"
         status_bg = "#e3f2fd" if is_defrosting else "#ffebee"
         self.defrost_status.setText(status_text)
-        self.defrost_status.setStyleSheet(f"color: {status_color}; font-weight: bold; padding: 12px; background: {status_bg}; border-radius: 8px; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);")
+        self.defrost_status.setStyleSheet(f"""
+            color: {status_color}; 
+            font-weight: bold; 
+            padding: 12px; 
+            background: {status_bg}; 
+            border-radius: 8px; 
+            font-size: 16px;
+            margin: 5px;
+        """)
 
     def update_tunnel_setpoint(self, setpoint_value):
         """Update the tunnel setpoint display"""
@@ -869,6 +879,9 @@ class MainWindow(QMainWindow):
                                 pid_status = values[i+6].strip().lower() in ('true', '1', 't', 'y', 'yes')
                                 fan_status = values[i+7].strip().lower() in ('true', '1', 't', 'y', 'yes')
                                 
+                                # Determine defrost status: PID off (0) and fan on (1)
+                                is_defrosting = not pid_status and fan_status
+                                
                                 # Update UI if tunnel_id is valid
                                 if 1 <= tunnel_id <= 12:
                                     # Update temperatures
@@ -881,8 +894,8 @@ class MainWindow(QMainWindow):
                                     # Update running status based on PID status
                                     self.tunnel_widgets[tunnel_id-1].update_running_status(pid_status)
                                     
-                                    # We could also update fan status if needed
-                                    # Currently there's no specific UI element for fan status
+                                    # Update defrost status based on our logic
+                                    self.tunnel_widgets[tunnel_id-1].update_defrost_status(is_defrosting)
                         except (ValueError, IndexError) as e:
                             print(f"Error parsing tunnel data at index {i}: {e}")
         
