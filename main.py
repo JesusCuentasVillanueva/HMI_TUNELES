@@ -179,6 +179,62 @@ QFrame:hover {
         layout.addWidget(title)
         layout.addSpacing(2)
         
+        # Add setpoint labels container
+        setpoint_container = QWidget()
+        setpoint_layout = QHBoxLayout(setpoint_container)
+        setpoint_layout.setContentsMargins(5, 0, 5, 0)
+        setpoint_layout.setSpacing(10)
+        
+        # Tunnel setpoint label
+        self.tunnel_setpoint_label = QLabel("Túnel: --.-°C")
+        self.tunnel_setpoint_label.setAlignment(Qt.AlignCenter)
+        self.tunnel_setpoint_label.setStyleSheet("""
+            QLabel {
+                color: #1B5E20;
+                font-size: 16px;
+                font-weight: bold;
+                background-color: #E8F5E9;
+                border-radius: 8px;
+                padding: 8px 12px;
+                margin: 5px;
+            }
+        """)
+        setpoint_layout.addWidget(self.tunnel_setpoint_label)
+        
+        # Fruit setpoint label
+        self.fruit_setpoint_label = QLabel("Fruta: --.-°C")
+        self.fruit_setpoint_label.setAlignment(Qt.AlignCenter)
+        self.fruit_setpoint_label.setStyleSheet("""
+            QLabel {
+                color: #6A1B9A;
+                font-size: 16px;
+                font-weight: bold;
+                background-color: #F3E5F5;
+                border-radius: 8px;
+                padding: 8px 12px;
+                margin: 5px;
+            }
+        """)
+        setpoint_layout.addWidget(self.fruit_setpoint_label)
+        
+        layout.addWidget(setpoint_container)
+        
+        # Remove this redundant setpoint label
+        # self.setpoint_label = QLabel("Setpoint: --.-°C")
+        # self.setpoint_label.setAlignment(Qt.AlignCenter)
+        # self.setpoint_label.setStyleSheet("""
+        #     QLabel {
+        #         color: #1B5E20;
+        #         font-size: 16px;
+        #         font-weight: bold;
+        #         background-color: #E8F5E9;
+        #         border-radius: 8px;
+        #         padding: 8px 12px;
+        #         margin: 5px;
+        #     }
+        # """)
+        # layout.addWidget(self.setpoint_label)
+        
         # Status Frame
         status_layout = QHBoxLayout()
         status_layout.setSpacing(15)
@@ -451,6 +507,14 @@ QFrame:hover {
         self.defrost_status.setText(status_text)
         self.defrost_status.setStyleSheet(f"color: {status_color}; font-weight: bold; padding: 12px; background: {status_bg}; border-radius: 8px; font-size: 13px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);")
 
+    def update_tunnel_setpoint(self, setpoint_value):
+        """Update the tunnel setpoint display"""
+        self.tunnel_setpoint_label.setText(f"Túnel: {setpoint_value:.1f}°C")
+        
+    def update_fruit_setpoint(self, setpoint_value):
+        """Update the fruit setpoint display"""
+        self.fruit_setpoint_label.setText(f"Fruta: {setpoint_value:.2f}°C")
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -467,6 +531,9 @@ class MainWindow(QMainWindow):
             self.mqtt_client.defrost_status_updated.connect(self.update_defrost_status)
             self.mqtt_client.tunnel_status_updated.connect(self.update_running_status)
             self.mqtt_client.connection_status.connect(self.handle_connection_status)
+            
+            # Connect the message_received signal to our handler
+            self.mqtt_client.message_received.connect(self.on_mqtt_message)
             
             # Configuration authentication
             self.is_config_authenticated = False
@@ -770,6 +837,80 @@ class MainWindow(QMainWindow):
         self.mqtt_client.configure(config['mqtt'])
         
         QMessageBox.information(self, "Configuración", "Configuración guardada exitosamente.")
+        
+    def on_mqtt_message(self, topic, payload):
+        try:
+            # Check if this is a message from the A_ENVIAR topic
+            if topic == self.mqtt_client.config['topics']['receive']:
+                # Check if it's a setpoint message format (SXX,+/-XX.XX or FXX,+/-XX.XX)
+                if (payload.startswith("S") or payload.startswith("F")) and len(payload) >= 9:
+                    self.handle_setpoint_message(payload)
+                    return
+                
+                # Handle the new comma-separated values format
+                # Format: TXX,T.S,T.E,T.I,SP_Tunel,SP_Fruta,Estado_PID,Estado_Ventilador
+                values = payload.split(',')
+                
+                # Process values in groups of 8
+                for i in range(0, len(values), 8):
+                    if i + 7 < len(values):  # Ensure we have a complete set of 8 values
+                        try:
+                            # Extract tunnel identifier (TXX format)
+                            tunnel_identifier = values[i].strip()
+                            if tunnel_identifier.startswith('T') and len(tunnel_identifier) >= 3:
+                                tunnel_id = int(tunnel_identifier[1:])
+                                
+                                # Extract values
+                                output_temp = float(values[i+1])
+                                external_temp = float(values[i+2])
+                                internal_temp = float(values[i+3])
+                                tunnel_setpoint = float(values[i+4])
+                                fruit_setpoint = float(values[i+5])
+                                pid_status = values[i+6].strip().lower() in ('true', '1', 't', 'y', 'yes')
+                                fan_status = values[i+7].strip().lower() in ('true', '1', 't', 'y', 'yes')
+                                
+                                # Update UI if tunnel_id is valid
+                                if 1 <= tunnel_id <= 12:
+                                    # Update temperatures
+                                    self.tunnel_widgets[tunnel_id-1].update_temperature(output_temp, external_temp, internal_temp)
+                                    
+                                    # Update setpoints
+                                    self.tunnel_widgets[tunnel_id-1].update_tunnel_setpoint(tunnel_setpoint)
+                                    self.tunnel_widgets[tunnel_id-1].update_fruit_setpoint(fruit_setpoint)
+                                    
+                                    # Update running status based on PID status
+                                    self.tunnel_widgets[tunnel_id-1].update_running_status(pid_status)
+                                    
+                                    # We could also update fan status if needed
+                                    # Currently there's no specific UI element for fan status
+                        except (ValueError, IndexError) as e:
+                            print(f"Error parsing tunnel data at index {i}: {e}")
+        
+        except Exception as e:
+            print(f"Error processing MQTT message: {e}")
+    
+    def handle_setpoint_message(self, payload):
+        """Handle legacy setpoint message format"""
+        try:
+            # Check if it's a tunnel setpoint message (format: SXX,+/-XX.XX)
+            if payload.startswith("S") and len(payload) >= 9:
+                tunnel_id = int(payload[1:3])
+                setpoint_str = payload[4:]
+                setpoint_value = float(setpoint_str)
+                if 1 <= tunnel_id <= 12:
+                    # Update the corresponding tunnel widget's setpoint label
+                    self.tunnel_widgets[tunnel_id-1].update_tunnel_setpoint(setpoint_value)
+            
+            # Check if it's a fruit setpoint message (format: FXX,+/-XX.XX)
+            elif payload.startswith("F") and len(payload) >= 9:
+                fruit_id = int(payload[1:3])
+                setpoint_str = payload[4:]
+                setpoint_value = float(setpoint_str)
+                if 1 <= fruit_id <= 12:
+                    # Update the corresponding tunnel widget's fruit setpoint label
+                    self.tunnel_widgets[fruit_id-1].update_fruit_setpoint(setpoint_value)
+        except (ValueError, IndexError) as e:
+            print(f"Error parsing setpoint message: {e}")
 
 
 def main():

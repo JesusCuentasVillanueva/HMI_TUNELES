@@ -8,6 +8,7 @@ class MQTTClient(QObject):
     tunnel_status_updated = pyqtSignal(int, bool)  # tunnel_id, running_status
     connection_status = pyqtSignal(bool)  # connected status
     error_occurred = pyqtSignal(str)  # error message
+    message_received = pyqtSignal(str, str)  # Add this signal for raw messages
     
     def __init__(self):
         super().__init__()
@@ -122,23 +123,11 @@ class MQTTClient(QObject):
         # The actual delivery confirmation will be handled by the publish() result's wait_for_publish()
     
     def on_message(self, client, userdata, msg):
-        """Handle incoming MQTT messages
-        
-        Processes messages received from the A_ENVIAR topic.
-        Expected message formats:
-        
-        1. Temperature update:
-           {"tunnel_id": X, "temp_output": Y, "temp_external": Z, "temp_internal": W}
-        
-        2. Defrost status update:
-           {"tunnel_id": X, "defrost_status": true/false}
-        
-        3. Running status update:
-           {"tunnel_id": X, "running_status": true/false}
-        
-        Each message type triggers the corresponding signal to update the UI.
-        """
         try:
+            # Emit the raw message for custom handling
+            payload = msg.payload.decode()
+            self.message_received.emit(msg.topic, payload)
+            
             # Process messages from PLC's ENVIAR topic (A_ENVIAR)
             if msg.topic == self.config['topics']['receive']:
                 try:

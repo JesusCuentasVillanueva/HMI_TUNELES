@@ -366,10 +366,13 @@ class SetpointWindow(QWidget):
             
             for message in formatted_messages:
                 if hasattr(self.mqtt_client, 'client') and hasattr(self.mqtt_client.client, 'publish'):
-                    self.mqtt_client.client.publish(topic, message)
+                    # Usar retain=True y qos=1
+                    self.mqtt_client.client.publish(topic, message, qos=1, retain=True)
                 elif hasattr(self.mqtt_client, 'publish'):
-                    self.mqtt_client.publish(topic, message)
+                    # Usar retain=True y qos=1
+                    self.mqtt_client.publish(topic, message, qos=1, retain=True)
                 elif hasattr(self.mqtt_client, 'send_message'):
+                    # Asumimos que send_message ya tiene configurado retain y qos
                     if not self.mqtt_client.send_message(topic, message):
                         success = False
                 else:
@@ -489,15 +492,18 @@ class SetpointWindow(QWidget):
                 
                 # Intenta usar diferentes métodos que podrían existir en el cliente MQTT
                 if hasattr(self.mqtt_client, 'client') and hasattr(self.mqtt_client.client, 'publish'):
-                    self.mqtt_client.client.publish(topic, formatted_setpoint)
+                    # Usar retain=True y qos=1
+                    self.mqtt_client.client.publish(topic, formatted_setpoint, qos=1, retain=True)
                     success = True
                 elif hasattr(self.mqtt_client, 'publish'):
-                    self.mqtt_client.publish(topic, formatted_setpoint)
+                    # Usar retain=True y qos=1
+                    self.mqtt_client.publish(topic, formatted_setpoint, qos=1, retain=True)
                     success = True
                 elif hasattr(self.mqtt_client, 'send_message'):
+                    # Asumimos que send_message ya tiene configurado retain y qos
                     success = self.mqtt_client.send_message(topic, formatted_setpoint)
                 elif hasattr(self.mqtt_client, 'set_temperature'):
-                    # Si existe set_temperature, asumimos que internamente usa el topic correcto
+                    # Asumimos que set_temperature ya tiene configurado retain y qos
                     success = self.mqtt_client.set_temperature(tunnel_id, setpoint)
                 else:
                     raise Exception("No se encontró un método adecuado para publicar mensajes MQTT")
@@ -601,10 +607,12 @@ class SetpointWindow(QWidget):
                 
                 # Intenta usar diferentes métodos que podrían existir en el cliente MQTT
                 if hasattr(self.mqtt_client, 'client') and hasattr(self.mqtt_client.client, 'publish'):
-                    self.mqtt_client.client.publish(topic, formatted_setpoint)
+                    # Añadir retain=True y qos=1 para los setpoints de fruta
+                    self.mqtt_client.client.publish(topic, formatted_setpoint, qos=1, retain=True)
                     success = True
                 elif hasattr(self.mqtt_client, 'publish'):
-                    self.mqtt_client.publish(topic, formatted_setpoint)
+                    # Añadir retain=True y qos=1 para los setpoints de fruta
+                    self.mqtt_client.publish(topic, formatted_setpoint, qos=1, retain=True)
                     success = True
                 elif hasattr(self.mqtt_client, 'send_message'):
                     success = self.mqtt_client.send_message(topic, formatted_setpoint)
