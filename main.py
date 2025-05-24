@@ -555,10 +555,13 @@ class MainWindow(QMainWindow):
         
         # Cross-platform fullscreen handling
         if sys.platform.startswith('linux'):
-            # Linux-specific fullscreen handling
-            self.setWindowState(Qt.WindowMaximized)
-            # Additional flag for Linux
-            self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+            # Linux-specific fullscreen handling - mu00e1s agresivo
+            self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
+            self.showMaximized()
+            # Asegurar que ocupe toda la pantalla disponible
+            desktop = QApplication.desktop()
+            geometry = desktop.screenGeometry()
+            self.setGeometry(0, 0, geometry.width(), geometry.height())
         else:
             # Windows default behavior
             self.showFullScreen()
