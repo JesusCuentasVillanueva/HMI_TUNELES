@@ -1,0 +1,10 @@
+mqtt:
+  access_code: ''
+  broker: 192.168.0.241
+  messages:
+    start: start
+    stop: stop
+  port: 1883
+  topics:
+    receive: A_ENVIAR
+    send: A_RECIBIR
