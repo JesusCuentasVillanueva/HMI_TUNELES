@@ -552,7 +552,16 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Control de Túneles de Enfriamiento")
-        self.showFullScreen()
+        
+        # Cross-platform fullscreen handling
+        if sys.platform.startswith('linux'):
+            # Linux-specific fullscreen handling
+            self.setWindowState(Qt.WindowMaximized)
+            # Additional flag for Linux
+            self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+        else:
+            # Windows default behavior
+            self.showFullScreen()
         
         # Initialize MQTT client with configuration
         self.mqtt_client = MQTTClient()
