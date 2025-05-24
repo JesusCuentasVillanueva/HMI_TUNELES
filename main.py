@@ -9,6 +9,8 @@ from PyQt5.QtGui import QFont, QPalette, QColor
 import qtawesome as qta
 from mqtt_client import MQTTClient
 from setpoint_window import SetpointWindow
+# Add this import at the top of the file with the other imports
+from calibration_window import CalibrationWindow
 
 class TunnelWidget(QFrame):
     def __init__(self, tunnel_id, mqtt_client, parent=None):
@@ -482,6 +484,27 @@ QFrame:hover {
                 self.setpoint_window = None
             QMessageBox.critical(self, "Error", f"Error al abrir la ventana de setpoints: {str(e)}")
     
+    def open_calibration_window(self):
+        try:
+            # Close existing window if it exists
+            if hasattr(self, 'calibration_window') and self.calibration_window:
+                self.calibration_window.close()
+                self.calibration_window = None
+            
+            # Create and show new calibration window
+            self.calibration_window = CalibrationWindow(self.mqtt_client)
+            self.calibration_window.showFullScreen()
+            
+            # Connect signals for cleanup
+            self.calibration_window.destroyed.connect(lambda: setattr(self, 'calibration_window', None))
+            
+        except Exception as e:
+            # Handle cleanup in case of error
+            if hasattr(self, 'calibration_window') and self.calibration_window:
+                self.calibration_window.close()
+                self.calibration_window = None
+            QMessageBox.critical(self, "Error", f"Error al abrir la ventana de calibración: {str(e)}")
+    
     def update_temperature(self, output_temp, external_temp, internal_temp):
         self.temp_output.setText(f"{output_temp:.1f}°C")
         self.temp_external.setText(f"{external_temp:.1f}°C")
@@ -594,6 +617,25 @@ class MainWindow(QMainWindow):
             }
         """)
         status_bar.addWidget(self.connection_status)
+        
+        # Add calibration button
+        calibration_button = QPushButton(qta.icon('fa5s.sliders-h'), "Calibración")
+        calibration_button.setStyleSheet("""
+            QPushButton {
+                background-color: #2196f3;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #1e88e5;
+            }
+        """)
+        calibration_button.clicked.connect(self.open_calibration_window)
+        status_bar.addStretch()  # Add stretch to push connection status to the left and calibration button to the right
+        status_bar.addWidget(calibration_button)
         
         # Add status bar to main layout
         main_layout.addLayout(status_bar)
@@ -743,6 +785,27 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Error de Conexión",
                               "Se perdió la conexión con el broker MQTT.\n"
                               "Verifique la conexión y reinicie la aplicación.")
+    
+    def open_calibration_window(self):
+        try:
+            # Close existing window if it exists
+            if hasattr(self, 'calibration_window') and self.calibration_window:
+                self.calibration_window.close()
+                self.calibration_window = None
+            
+            # Create and show new calibration window
+            self.calibration_window = CalibrationWindow(self.mqtt_client)
+            self.calibration_window.showFullScreen()
+            
+            # Connect signals for cleanup
+            self.calibration_window.destroyed.connect(lambda: setattr(self, 'calibration_window', None))
+            
+        except Exception as e:
+            # Handle cleanup in case of error
+            if hasattr(self, 'calibration_window') and self.calibration_window:
+                self.calibration_window.close()
+                self.calibration_window = None
+            QMessageBox.critical(self, "Error", f"Error al abrir la ventana de calibración: {str(e)}")
     
     def authenticate(self):
         input_code = self.auth_input.text()
