@@ -180,7 +180,16 @@ class CalibrationWindow(QMainWindow):
         super().__init__(parent)
         self.mqtt_client = mqtt_client
         self.setWindowTitle("Calibración de Sensores")
-        self.showFullScreen()
+        
+        # Cross-platform fullscreen handling
+        if sys.platform.startswith('linux'):
+            # Linux-specific fullscreen handling
+            self.setWindowState(Qt.WindowMaximized)
+            # Additional flag for Linux
+            self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+        else:
+            # Windows default behavior
+            self.showFullScreen()
         
         # Define color schemes for each sensor type
         self.color_schemes = {
@@ -211,6 +220,10 @@ class CalibrationWindow(QMainWindow):
         }
         
         self.setup_ui()
+        
+        # For Linux, we need to explicitly show the window after setup
+        if sys.platform.startswith('linux'):
+            self.showMaximized()
     
     def setup_ui(self):
         central_widget = QWidget()
