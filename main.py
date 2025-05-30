@@ -572,10 +572,11 @@ class MainWindow(QMainWindow):
             # pero ajustar el layout interno para que se vea bien
             self.proportion_container = QWidget(self)
             self.setCentralWidget(self.proportion_container)
-            self.proportion_container.setStyleSheet("background-color: black;")
+            # No aplicar estilo al contenedor para mantener el estilo original
+            self.proportion_container.setStyleSheet("")
             
             # Aplicar un margen proporcional para mejorar la visualización
-            margin_percent = 0.02  # 2% de margen
+            margin_percent = 0.03  # 3% de margen
             margin_x = int(screen_width * margin_percent)
             margin_y = int(screen_height * margin_percent)
         else:
@@ -609,7 +610,7 @@ class MainWindow(QMainWindow):
                 
                 # Crear el widget principal que contendrá toda la UI
                 self.main_widget = QWidget()
-                self.main_widget.setStyleSheet("background-color: #333333;")  # Fondo oscuro para el contenedor
+                self.main_widget.setStyleSheet("")
                 self.main_layout.addWidget(self.main_widget)
                 
                 # Configurar la UI en el widget principal
@@ -725,13 +726,20 @@ class MainWindow(QMainWindow):
                 tunnel_index = group * 3 + i
                 if tunnel_index < 12:  # Only create valid tunnel widgets
                     tunnel_widget = TunnelWidget(tunnel_index + 1, self.mqtt_client)
-                    tunnel_widget.setMinimumWidth(300)  # Set minimum width for better spacing
-                    tunnel_widget.setMinimumHeight(700)  # Set minimum height to accommodate vertical buttons
+                    
+                    # Ajustar tamaño para Linux pero mantener estilo original
+                    if sys.platform.startswith('linux'):
+                        tunnel_widget.setMinimumWidth(250)  # Reducir ancho mínimo para Linux
+                        tunnel_widget.setMinimumHeight(550)  # Reducir altura mínima para Linux
+                    else:
+                        tunnel_widget.setMinimumWidth(300)  # Ancho mínimo normal para Windows
+                        tunnel_widget.setMinimumHeight(700)  # Altura mínima normal para Windows
+                        
                     group_layout.addWidget(tunnel_widget)
                     self.tunnel_widgets.append(tunnel_widget)
             
+            # Agregar el grupo de túneles al stack
             self.tunnel_stack.addWidget(group_widget)
-        
         # Connect navigation buttons
         prev_button.clicked.connect(lambda: self.tunnel_stack.setCurrentIndex(
             (self.tunnel_stack.currentIndex() - 1) % self.tunnel_stack.count()))
