@@ -557,11 +557,28 @@ class MainWindow(QMainWindow):
         if sys.platform.startswith('linux'):
             # Linux-specific handling para pantalla de 21cm x 16cm
             self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
-            # Convertir cm a píxeles (aproximadamente 38 píxeles por cm en pantallas de 96 DPI)
-            width_px = int(21 * 38)  # ~800px
-            height_px = int(16 * 38)  # ~608px
+            
+            # Obtener la resolución de la pantalla
+            desktop = QApplication.desktop()
+            screen_rect = desktop.screenGeometry()
+            screen_width = screen_rect.width()
+            screen_height = screen_rect.height()
+            
+            # Calcular el tamaño para una pantalla de 21cm x 16cm
+            # Usar el factor de escala más restrictivo para mantener proporciones
+            width_scale = screen_width / 21.0
+            height_scale = screen_height / 16.0
+            scale_factor = min(width_scale, height_scale) * 0.95  # 95% del tamaño disponible
+            
+            width_px = int(21 * scale_factor)
+            height_px = int(16 * scale_factor)
+            
+            # Centrar en la pantalla
+            x_pos = (screen_width - width_px) // 2
+            y_pos = (screen_height - height_px) // 2
+            
             self.setFixedSize(width_px, height_px)
-            self.setGeometry(0, 0, width_px, height_px)
+            self.setGeometry(x_pos, y_pos, width_px, height_px)
         else:
             # Windows default behavior
             self.showFullScreen()
