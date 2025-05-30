@@ -576,9 +576,10 @@ class MainWindow(QMainWindow):
             self.proportion_container.setStyleSheet("")
             
             # Aplicar un margen proporcional para mejorar la visualización
-            margin_percent = 0.03  # 3% de margen
-            margin_x = int(screen_width * margin_percent)
-            margin_y = int(screen_height * margin_percent)
+            margin_percent_x = 0.02  # 2% de margen horizontal
+            margin_percent_y = 0.01  # 1% de margen vertical (reducido para aprovechar más espacio vertical)
+            margin_x = int(screen_width * margin_percent_x)
+            margin_y = int(screen_height * margin_percent_y)
         else:
             # Windows default behavior
             self.showFullScreen()
@@ -721,6 +722,11 @@ class MainWindow(QMainWindow):
             group_widget = QWidget()
             group_layout = QHBoxLayout(group_widget)
             
+            # Reducir espaciado para Linux
+            if sys.platform.startswith('linux'):
+                group_layout.setSpacing(5)  # Menor espaciado entre túneles
+                group_layout.setContentsMargins(5, 5, 5, 5)  # Márgenes reducidos
+            
             # Add 3 tunnels to this group
             for i in range(3):
                 tunnel_index = group * 3 + i
@@ -729,8 +735,10 @@ class MainWindow(QMainWindow):
                     
                     # Ajustar tamaño para Linux pero mantener estilo original
                     if sys.platform.startswith('linux'):
-                        tunnel_widget.setMinimumWidth(250)  # Reducir ancho mínimo para Linux
-                        tunnel_widget.setMinimumHeight(550)  # Reducir altura mínima para Linux
+                        # Proporciones optimizadas para pantalla de 21cm x 16cm
+                        tunnel_widget.setMinimumWidth(220)  # Ancho mínimo reducido
+                        tunnel_widget.setMinimumHeight(400)  # Altura mínima reducida
+                        tunnel_widget.setMaximumHeight(450)  # Altura máxima para mantener proporciones
                     else:
                         tunnel_widget.setMinimumWidth(300)  # Ancho mínimo normal para Windows
                         tunnel_widget.setMinimumHeight(700)  # Altura mínima normal para Windows
