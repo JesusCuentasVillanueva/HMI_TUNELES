@@ -555,7 +555,7 @@ class MainWindow(QMainWindow):
         
         # Cross-platform fullscreen handling
         if sys.platform.startswith('linux'):
-            # Linux-specific handling para pantalla de 21cm x 16cm
+            # Linux-specific handling para pantalla de 21cm x 16cm en fullscreen
             self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
             
             # Obtener la resolución de la pantalla
@@ -564,21 +564,36 @@ class MainWindow(QMainWindow):
             screen_width = screen_rect.width()
             screen_height = screen_rect.height()
             
-            # Calcular el tamaño para una pantalla de 21cm x 16cm
-            # Usar el factor de escala más restrictivo para mantener proporciones
-            width_scale = screen_width / 21.0
-            height_scale = screen_height / 16.0
-            scale_factor = min(width_scale, height_scale) * 0.95  # 95% del tamaño disponible
+            # Usar pantalla completa
+            self.setGeometry(0, 0, screen_width, screen_height)
+            self.showFullScreen()
             
-            width_px = int(21 * scale_factor)
-            height_px = int(16 * scale_factor)
+            # Calcular el factor de escala para mantener proporciones 21:16
+            # Esto afectará al layout principal para que mantenga las proporciones correctas
+            target_aspect_ratio = 21.0 / 16.0
+            current_aspect_ratio = float(screen_width) / float(screen_height)
             
-            # Centrar en la pantalla
-            x_pos = (screen_width - width_px) // 2
-            y_pos = (screen_height - height_px) // 2
+            # Crear un widget contenedor central que mantenga las proporciones
+            self.proportion_container = QWidget(self)
             
-            self.setFixedSize(width_px, height_px)
-            self.setGeometry(x_pos, y_pos, width_px, height_px)
+            if current_aspect_ratio > target_aspect_ratio:
+                # Pantalla más ancha que alta (respecto a la proporción objetivo)
+                container_height = screen_height
+                container_width = int(container_height * target_aspect_ratio)
+            else:
+                # Pantalla más alta que ancha (respecto a la proporción objetivo)
+                container_width = screen_width
+                container_height = int(container_width / target_aspect_ratio)
+            
+            # Centrar el contenedor en la pantalla
+            x_pos = (screen_width - container_width) // 2
+            y_pos = (screen_height - container_height) // 2
+            
+            self.proportion_container.setGeometry(x_pos, y_pos, container_width, container_height)
+            self.proportion_container.setStyleSheet("background-color: transparent;")
+            
+            # El contenedor central será el widget central de la aplicación
+            self.setCentralWidget(self.proportion_container)
         else:
             # Windows default behavior
             self.showFullScreen()
@@ -601,7 +616,22 @@ class MainWindow(QMainWindow):
             self.is_config_authenticated = False
             self.config_access_code = self.mqtt_client.config.get('access_code', 'migiva')
             
-            self.setup_ui()
+            # Configurar la UI dependiendo de la plataforma
+            if sys.platform.startswith('linux'):
+                # Crear layout para el contenedor proporcionado
+                self.main_layout = QVBoxLayout(self.proportion_container)
+                self.main_layout.setContentsMargins(0, 0, 0, 0)
+                self.main_layout.setSpacing(0)
+                
+                # Crear el widget principal que contendrá toda la UI
+                self.main_widget = QWidget()
+                self.main_layout.addWidget(self.main_widget)
+                
+                # Configurar la UI en el widget principal
+                self.setup_ui(self.main_widget)
+            else:
+                # En Windows seguimos con el comportamiento normal
+                self.setup_ui()
             
             # Start connection after UI is set up
             self.mqtt_client.connect()
@@ -623,9 +653,13 @@ class MainWindow(QMainWindow):
             }}
         """)
 
-    def setup_ui(self):
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+    def setup_ui(self, parent_widget=None):
+        # Create central widget and main layout
+        central_widget = parent_widget if parent_widget else QWidget()
+        
+        # Solo establecer el widget central si no estamos usando un widget padre
+        if not parent_widget:
+            self.setCentralWidget(central_widget)
         
         # Create main layout
         main_layout = QVBoxLayout(central_widget)
