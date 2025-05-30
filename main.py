@@ -555,31 +555,19 @@ class MainWindow(QMainWindow):
         
         # Cross-platform fullscreen handling
         if sys.platform.startswith('linux'):
-            # Linux-specific handling para pantalla de 21cm x 16cm en fullscreen
+            # Linux-specific handling para pantalla de 21cm x 16cm
             self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
             
-            # Obtener la resolución de la pantalla
-            desktop = QApplication.desktop()
-            screen_rect = desktop.screenGeometry()
-            screen_width = screen_rect.width()
-            screen_height = screen_rect.height()
-            
-            # Usar pantalla completa
-            self.setGeometry(0, 0, screen_width, screen_height)
+            # Usar pantalla completa sin modificar proporciones
             self.showFullScreen()
             
-            # Para pantallas de 21cm x 16cm, usar toda la pantalla disponible
-            # pero ajustar el layout interno para que se vea bien
-            self.proportion_container = QWidget(self)
-            self.setCentralWidget(self.proportion_container)
-            # No aplicar estilo al contenedor para mantener el estilo original
-            self.proportion_container.setStyleSheet("")
+            # Configurar widget central directamente
+            central_widget = QWidget()
+            self.setCentralWidget(central_widget)
             
-            # Aplicar un margen proporcional para mejorar la visualización
-            margin_percent_x = 0.02  # 2% de margen horizontal
-            margin_percent_y = 0.01  # 1% de margen vertical (reducido para aprovechar más espacio vertical)
-            margin_x = int(screen_width * margin_percent_x)
-            margin_y = int(screen_height * margin_percent_y)
+            # Margen mínimo para dar espacio
+            margin_x = 5
+            margin_y = 5
         else:
             # Windows default behavior
             self.showFullScreen()
@@ -604,18 +592,18 @@ class MainWindow(QMainWindow):
             
             # Configurar la UI dependiendo de la plataforma
             if sys.platform.startswith('linux'):
-                # Crear layout para el contenedor proporcionado con márgenes adecuados
-                self.main_layout = QVBoxLayout(self.proportion_container)
-                self.main_layout.setContentsMargins(margin_x, margin_y, margin_x, margin_y)
-                self.main_layout.setSpacing(5)  # Espacio entre elementos
+                # Crear layout para el widget central con márgenes mínimos
+                main_layout = QVBoxLayout(central_widget)
+                main_layout.setContentsMargins(margin_x, margin_y, margin_x, margin_y)
+                main_layout.setSpacing(2)  # Espacio mínimo entre elementos
                 
-                # Crear el widget principal que contendrá toda la UI
-                self.main_widget = QWidget()
-                self.main_widget.setStyleSheet("")
-                self.main_layout.addWidget(self.main_widget)
+                # Ajustar la fuente global solo para la instancia de Linux
+                linux_font = QFont()
+                linux_font.setPointSize(8)  # Tamaño de fuente reducido solo para Linux
+                central_widget.setFont(linux_font)  # Aplicar solo al widget central
                 
-                # Configurar la UI en el widget principal
-                self.setup_ui(self.main_widget)
+                # Configurar la UI directamente en el widget central
+                self.setup_ui(central_widget)
             else:
                 # En Windows seguimos con el comportamiento normal
                 self.setup_ui()
@@ -697,21 +685,41 @@ class MainWindow(QMainWindow):
         monitoring_tab = QWidget()
         grid_layout = QGridLayout(monitoring_tab)
         
-        # Create carousel layout
+        # Create carousel layout for tunnels
         carousel_layout = QHBoxLayout()
+        carousel_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Previous button
+        # Ajustar el layout del carrusel para Linux
+        if sys.platform.startswith('linux'):
+            # Usar un layout más compacto en Linux
+            carousel_layout.setSpacing(5)
+        else:
+            carousel_layout.setSpacing(10)
+            
+        main_layout.addLayout(carousel_layout)
+        
+        # Crear botones de navegación
         prev_button = QPushButton(qta.icon('fa5s.chevron-left'), "")
-        prev_button.setFixedWidth(50)
+        next_button = QPushButton(qta.icon('fa5s.chevron-right'), "")
+        
+        # Ajustar tamaño solo en Linux
+        if sys.platform.startswith('linux'):
+            # Botones más pequeños para Linux
+            prev_button.setFixedWidth(30)
+            prev_button.setFixedHeight(80)
+            next_button.setFixedWidth(30)
+            next_button.setFixedHeight(80)
+        else:
+            # Tamaño normal para Windows (como estaba originalmente)
+            prev_button.setFixedWidth(50)
+            next_button.setFixedWidth(50)
+        
         carousel_layout.addWidget(prev_button)
         
         # Stacked widget for tunnel groups
         self.tunnel_stack = QStackedWidget()
         carousel_layout.addWidget(self.tunnel_stack)
         
-        # Next button
-        next_button = QPushButton(qta.icon('fa5s.chevron-right'), "")
-        next_button.setFixedWidth(50)
         carousel_layout.addWidget(next_button)
         
         # Create tunnel widgets in groups of 3
@@ -722,10 +730,12 @@ class MainWindow(QMainWindow):
             group_widget = QWidget()
             group_layout = QHBoxLayout(group_widget)
             
-            # Reducir espaciado para Linux
+            # Reducir espaciado en Linux para aprovechar mejor el espacio
             if sys.platform.startswith('linux'):
-                group_layout.setSpacing(5)  # Menor espaciado entre túneles
-                group_layout.setContentsMargins(5, 5, 5, 5)  # Márgenes reducidos
+                group_layout.setSpacing(5)  # Espaciado reducido para Linux
+                group_layout.setContentsMargins(2, 2, 2, 2)  # Márgenes mínimos
+            else:
+                group_layout.setSpacing(15)  # Espaciado normal para Windows
             
             # Add 3 tunnels to this group
             for i in range(3):
@@ -733,12 +743,21 @@ class MainWindow(QMainWindow):
                 if tunnel_index < 12:  # Only create valid tunnel widgets
                     tunnel_widget = TunnelWidget(tunnel_index + 1, self.mqtt_client)
                     
-                    # Ajustar tamaño para Linux pero mantener estilo original
+                    # En Linux, establecer tamaños fijos para la pantalla de 21cm x 16cm
                     if sys.platform.startswith('linux'):
-                        # Proporciones optimizadas para pantalla de 21cm x 16cm
-                        tunnel_widget.setMinimumWidth(220)  # Ancho mínimo reducido
-                        tunnel_widget.setMinimumHeight(400)  # Altura mínima reducida
-                        tunnel_widget.setMaximumHeight(450)  # Altura máxima para mantener proporciones
+                        # Tamaños fijos optimizados para pantalla pequeña
+                        tunnel_widget.setFixedWidth(220)  # Ancho fijo ajustado
+                        tunnel_widget.setFixedHeight(400)  # Alto fijo ajustado
+                        
+                        # Ajustar tamaños de fuente y botones para Linux
+                        for child in tunnel_widget.findChildren(QPushButton):
+                            child.setFixedHeight(40)  # Altura reducida para botones
+                            child.setFont(QFont('Arial', 8))  # Fuente más pequeña
+                            
+                        for child in tunnel_widget.findChildren(QLabel):
+                            font = child.font()
+                            font.setPointSize(8)  # Fuente más pequeña para etiquetas
+                            child.setFont(font)
                     else:
                         tunnel_widget.setMinimumWidth(300)  # Ancho mínimo normal para Windows
                         tunnel_widget.setMinimumHeight(700)  # Altura mínima normal para Windows
