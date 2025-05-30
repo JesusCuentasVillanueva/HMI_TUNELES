@@ -568,32 +568,16 @@ class MainWindow(QMainWindow):
             self.setGeometry(0, 0, screen_width, screen_height)
             self.showFullScreen()
             
-            # Calcular el factor de escala para mantener proporciones 21:16
-            # Esto afectará al layout principal para que mantenga las proporciones correctas
-            target_aspect_ratio = 21.0 / 16.0
-            current_aspect_ratio = float(screen_width) / float(screen_height)
-            
-            # Crear un widget contenedor central que mantenga las proporciones
+            # Para pantallas de 21cm x 16cm, usar toda la pantalla disponible
+            # pero ajustar el layout interno para que se vea bien
             self.proportion_container = QWidget(self)
-            
-            if current_aspect_ratio > target_aspect_ratio:
-                # Pantalla más ancha que alta (respecto a la proporción objetivo)
-                container_height = screen_height
-                container_width = int(container_height * target_aspect_ratio)
-            else:
-                # Pantalla más alta que ancha (respecto a la proporción objetivo)
-                container_width = screen_width
-                container_height = int(container_width / target_aspect_ratio)
-            
-            # Centrar el contenedor en la pantalla
-            x_pos = (screen_width - container_width) // 2
-            y_pos = (screen_height - container_height) // 2
-            
-            self.proportion_container.setGeometry(x_pos, y_pos, container_width, container_height)
-            self.proportion_container.setStyleSheet("background-color: transparent;")
-            
-            # El contenedor central será el widget central de la aplicación
             self.setCentralWidget(self.proportion_container)
+            self.proportion_container.setStyleSheet("background-color: black;")
+            
+            # Aplicar un margen proporcional para mejorar la visualización
+            margin_percent = 0.02  # 2% de margen
+            margin_x = int(screen_width * margin_percent)
+            margin_y = int(screen_height * margin_percent)
         else:
             # Windows default behavior
             self.showFullScreen()
@@ -618,13 +602,14 @@ class MainWindow(QMainWindow):
             
             # Configurar la UI dependiendo de la plataforma
             if sys.platform.startswith('linux'):
-                # Crear layout para el contenedor proporcionado
+                # Crear layout para el contenedor proporcionado con márgenes adecuados
                 self.main_layout = QVBoxLayout(self.proportion_container)
-                self.main_layout.setContentsMargins(0, 0, 0, 0)
-                self.main_layout.setSpacing(0)
+                self.main_layout.setContentsMargins(margin_x, margin_y, margin_x, margin_y)
+                self.main_layout.setSpacing(5)  # Espacio entre elementos
                 
                 # Crear el widget principal que contendrá toda la UI
                 self.main_widget = QWidget()
+                self.main_widget.setStyleSheet("background-color: #333333;")  # Fondo oscuro para el contenedor
                 self.main_layout.addWidget(self.main_widget)
                 
                 # Configurar la UI en el widget principal
