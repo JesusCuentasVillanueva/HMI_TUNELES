@@ -90,22 +90,22 @@ class TunnelWidget(QFrame):
         self.setStyleSheet('''
 TunnelWidget {
     background-color: #ffffff;
-    border-radius: 10px;
-    padding: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.05);
 }
 QPushButton {
     background-color: #4caf50;
     border: none;
-    border-radius: 8px;
-    padding: 8px 15px;
+    border-radius: 12px;
+    padding: 12px 25px;
     color: white;
     font-weight: 600;
-    min-width: 120px;
-    margin: 5px;
-    font-size: 12px;
+    min-width: 180px;
+    margin: 10px;
+    font-size: 14px;
     text-transform: uppercase;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.4px;
     transition: all 0.2s ease;
 }
 QPushButton:hover {
@@ -126,28 +126,28 @@ QPushButton#defrostButton:checked {
     background-color: #7cb342;
 }
 QLabel {
-    padding: 5px;
-    font-size: 14px;
+    padding: 10px;
+    font-size: 18px;
     color: #212121;
     font-weight: 600;
-    margin: 4px;
+    margin: 8px;
 }
 QLabel[temperature="true"] {
-    font-size: 24px;
+    font-size: 38px;
     font-weight: bold;
     color: #388e3c;
-    margin: 6px 0;
-    min-width: 100px;
-    min-height: 35px;
+    margin: 12px 0;
+    min-width: 140px;
+    min-height: 55px;
 }
 QDoubleSpinBox {
     border: none;
-    border-radius: 6px;
-    padding: 8px;
-    font-size: 12px;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
     background-color: #ffffff;
     color: #212121;
-    min-width: 100px;
+    min-width: 180px;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 QDoubleSpinBox:hover {
@@ -158,10 +158,10 @@ QDoubleSpinBox:focus {
 }
 QFrame {
     border: none;
-    border-radius: 8px;
+    border-radius: 15px;
     background-color: #ffffff;
-    padding: 10px;
-    margin: 8px;
+    padding: 20px;
+    margin: 15px;
 }
 QFrame:hover {
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
@@ -170,16 +170,16 @@ QFrame:hover {
 
         # Create main layout
         layout = QVBoxLayout()
-        layout.setSpacing(2)
-        layout.setContentsMargins(5, 5, 5, 5)
+        layout.setSpacing(3)
+        layout.setContentsMargins(10, 10, 10, 10)
         
         # Title
         title = QLabel(f"Túnel {self.tunnel_id}")
-        title.setFont(QFont('Arial', 24, QFont.Bold))
-        title.setStyleSheet('font-size: 24px; font-weight: bold;')
+        title.setFont(QFont('Arial', 100, QFont.Bold))
+        title.setStyleSheet('font-size: 60px; font-weight: bold;')
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title)
-        layout.addSpacing(1)
+        layout.addSpacing(2)
         
         # Add setpoint labels container
         setpoint_container = QWidget()
@@ -193,12 +193,12 @@ QFrame:hover {
         self.tunnel_setpoint_label.setStyleSheet("""
             QLabel {
                 color: #1B5E20;
-                font-size: 12px;
+                font-size: 16px;
                 font-weight: bold;
                 background-color: #E8F5E9;
-                border-radius: 6px;
-                padding: 5px 8px;
-                margin: 3px;
+                border-radius: 8px;
+                padding: 8px 12px;
+                margin: 5px;
             }
         """)
         setpoint_layout.addWidget(self.tunnel_setpoint_label)
@@ -209,17 +209,33 @@ QFrame:hover {
         self.fruit_setpoint_label.setStyleSheet("""
             QLabel {
                 color: #6A1B9A;
-                font-size: 12px;
+                font-size: 16px;
                 font-weight: bold;
                 background-color: #F3E5F5;
-                border-radius: 6px;
-                padding: 5px 8px;
-                margin: 3px;
+                border-radius: 8px;
+                padding: 8px 12px;
+                margin: 5px;
             }
         """)
         setpoint_layout.addWidget(self.fruit_setpoint_label)
         
         layout.addWidget(setpoint_container)
+        
+        # Remove this redundant setpoint label
+        # self.setpoint_label = QLabel("Setpoint: --.-°C")
+        # self.setpoint_label.setAlignment(Qt.AlignCenter)
+        # self.setpoint_label.setStyleSheet("""
+        #     QLabel {
+        #         color: #1B5E20;
+        #         font-size: 16px;
+        #         font-weight: bold;
+        #         background-color: #E8F5E9;
+        #         border-radius: 8px;
+        #         padding: 8px 12px;
+        #         margin: 5px;
+        #     }
+        # """)
+        # layout.addWidget(self.setpoint_label)
         
         # Status Frame
         status_layout = QVBoxLayout()
@@ -539,13 +555,13 @@ class MainWindow(QMainWindow):
         
         # Cross-platform fullscreen handling
         if sys.platform.startswith('linux'):
-            # Linux-specific handling for 21cm x 16cm screen
+            # Linux-specific fullscreen handling - mu00e1s agresivo
             self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint)
-            # Convertir cm a píxeles (aproximadamente 38 píxeles por cm en pantallas de 96 DPI)
-            width_px = int(21 * 38)  # ~800px
-            height_px = int(16 * 38)  # ~608px
-            self.setFixedSize(width_px, height_px)
-            self.setGeometry(0, 0, width_px, height_px)
+            self.showMaximized()
+            # Asegurar que ocupe toda la pantalla disponible
+            desktop = QApplication.desktop()
+            geometry = desktop.screenGeometry()
+            self.setGeometry(0, 0, geometry.width(), geometry.height())
         else:
             # Windows default behavior
             self.showFullScreen()
@@ -991,27 +1007,22 @@ def main():
     # Set application style
     app.setStyle('Fusion')
     
-    # Apply dark palette optimized for small screens
+    # Create light palette with lime accents
     palette = QPalette()
-    palette.setColor(QPalette.Window, QColor(53, 53, 53))
-    palette.setColor(QPalette.WindowText, Qt.white)
-    palette.setColor(QPalette.Base, QColor(25, 25, 25))
-    palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-    palette.setColor(QPalette.ToolTipBase, Qt.white)
-    palette.setColor(QPalette.ToolTipText, Qt.white)
-    palette.setColor(QPalette.Text, Qt.white)
-    palette.setColor(QPalette.Button, QColor(53, 53, 53))
-    palette.setColor(QPalette.ButtonText, Qt.white)
-    palette.setColor(QPalette.BrightText, Qt.red)
-    palette.setColor(QPalette.Link, QColor(42, 130, 218))
-    palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
-    palette.setColor(QPalette.HighlightedText, Qt.black)
+    palette.setColor(QPalette.Window, QColor(245, 245, 245))
+    palette.setColor(QPalette.WindowText, QColor(51, 51, 51))
+    palette.setColor(QPalette.Base, QColor(255, 255, 255))
+    palette.setColor(QPalette.AlternateBase, QColor(240, 240, 240))
+    palette.setColor(QPalette.ToolTipBase, QColor(255, 255, 255))
+    palette.setColor(QPalette.ToolTipText, QColor(51, 51, 51))
+    palette.setColor(QPalette.Text, QColor(51, 51, 51))
+    palette.setColor(QPalette.Button, QColor(154, 205, 50))
+    palette.setColor(QPalette.ButtonText, QColor(255, 255, 255))
+    palette.setColor(QPalette.BrightText, QColor(255, 0, 0))
+    palette.setColor(QPalette.Link, QColor(154, 205, 50))
+    palette.setColor(QPalette.Highlight, QColor(154, 205, 50))
+    palette.setColor(QPalette.HighlightedText, QColor(255, 255, 255))
     app.setPalette(palette)
-    
-    # Ajustar el tamaño de fuente global para pantallas pequeñas
-    font = app.font()
-    font.setPointSize(9)  # Tamaño de fuente más pequeño para pantallas pequeñas
-    app.setFont(font)
     
     window = MainWindow()
     window.show()
